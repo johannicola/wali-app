@@ -2,6 +2,7 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import BottomTabs from './src/navigation/BottomTabs';
+import { TransactionsProvider } from './src/services/TransactionsContext';
 import { colors } from './src/constants/colors';
 
 const theme = {
@@ -11,9 +12,11 @@ const theme = {
 
 export default function App() {
   return (
-    <NavigationContainer theme={theme}>
-      <StatusBar style="light" />
-      <BottomTabs />
-    </NavigationContainer>
+    <TransactionsProvider>
+      <NavigationContainer theme={theme}>
+        <StatusBar style="light" />
+        <BottomTabs />
+      </NavigationContainer>
+    </TransactionsProvider>
   );
 }
