@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, View, SafeAreaView } from 'react-native';
-import { COLORS } from '../constants/colors';
+import { StyleSheet, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../constants/colors';
 
 export default function TransactionsScreen() {
   return (
@@ -13,12 +14,12 @@ export default function TransactionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
-    color: COLORS.textPrimary,
+    color: colors.text,
     fontSize: 20,
     fontWeight: 'bold',
   },

@@ -1,7 +1,7 @@
 // src/screens/DashboardScreen.tsx
 import React from 'react';
 import { StyleSheet, Text, View, SafeAreaView, ScrollView } from 'react-native';
-import { COLORS } from '../constants/colors';
+import { colors } from '../constants/colors';
 
 export default function DashboardScreen() {
   return (
@@ -10,7 +10,7 @@ export default function DashboardScreen() {
         
         {/* Cabecera / Saludo */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Hola, Johan 👋</Text>
+          <Text style={styles.greeting}>Hola, Johan</Text>
           <Text style={styles.subtitle}>Bienvenido a WALI</Text>
         </View>
 
@@ -52,7 +52,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   scrollContainer: {
     padding: 20,
@@ -63,15 +63,15 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   subtitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: colors.textMuted,
     marginTop: 4,
   },
   balanceCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 24,
     marginBottom: 28,
@@ -80,13 +80,13 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: colors.textMuted,
     marginBottom: 8,
   },
   balanceAmount: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
+    color: colors.text,
     marginBottom: 12,
   },
   badgeContainer: {
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   badgeText: {
-    color: COLORS.primary,
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -107,25 +107,25 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   transactionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
   },
   transactionTitle: {
     fontSize: 16,
-    color: COLORS.textPrimary,
+    color: colors.text,
     fontWeight: '500',
   },
   transactionDate: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textMuted,
     marginTop: 4,
   },
   transactionAmountNegative: {
@@ -136,6 +136,6 @@ const styles = StyleSheet.create({
   transactionAmountPositive: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: colors.primary,
   },
 });

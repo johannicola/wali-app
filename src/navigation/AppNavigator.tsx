@@ -5,7 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import DashboardScreen from '../screens/DashboardScreen';
 import TransactionsScreen from '../screens/TransactionsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import { COLORS } from '../constants/colors';
+import { colors } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons'; // Iconos nativos de Expo
 
 const Tab = createBottomTabNavigator();
@@ -17,13 +17,13 @@ export default function AppNavigator() {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: COLORS.surface,
+            backgroundColor: colors.surface,
             borderTopColor: '#2A2A2A',
             height: 60,
             paddingBottom: 8,
           },
-          tabBarActiveTintColor: COLORS.primary,
-          tabBarInactiveTintColor: COLORS.textSecondary,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textMuted,
           tabBarIcon: ({ focused, color, size }) => {
             let iconName: keyof typeof Ionicons.glyphMap = 'home';
 
