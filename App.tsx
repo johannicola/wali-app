@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import BottomTabs from './src/navigation/BottomTabs';
 import { TransactionsProvider } from './src/services/TransactionsContext';
+import { BudgetProvider } from './src/services/BudgetContext';
 import { colors } from './src/constants/colors';
 
 const theme = {
@@ -13,10 +14,12 @@ const theme = {
 export default function App() {
   return (
     <TransactionsProvider>
-      <NavigationContainer theme={theme}>
-        <StatusBar style="light" />
-        <BottomTabs />
-      </NavigationContainer>
+      <BudgetProvider>
+        <NavigationContainer theme={theme}>
+          <StatusBar style="light" />
+          <BottomTabs />
+        </NavigationContainer>
+      </BudgetProvider>
     </TransactionsProvider>
   );
 }

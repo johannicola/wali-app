@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { loadTransactions, saveTransactions } from './storage';
+import type { CategoryId } from '../constants/categories';
 
 export type TransactionType = 'income' | 'expense';
 
@@ -8,6 +9,7 @@ export type Transaction = {
   title: string;
   amountCents: number;
   type: TransactionType;
+  categoryId?: CategoryId;
   date: string;
 };
 
