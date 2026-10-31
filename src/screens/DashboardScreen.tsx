@@ -1,4 +1,5 @@
 // src/screens/DashboardScreen.tsx
+import MonthComparison from '../components/MonthComparison';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -95,6 +96,7 @@ export default function DashboardScreen() {
         </View>
 
         <BudgetProgress spentCents={monthExpense} />
+        <MonthComparison />
 
         {/* Gastos por categoría */}
         <View style={styles.sectionHeader}>
