@@ -4,6 +4,7 @@ import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import BottomTabs from './src/navigation/BottomTabs';
 import { TransactionsProvider } from './src/services/TransactionsContext';
 import { BudgetProvider } from './src/services/BudgetContext';
+import { RecurringProvider } from './src/services/RecurringContext';
 import { colors } from './src/constants/colors';
 
 const theme = {
@@ -15,10 +16,12 @@ export default function App() {
   return (
     <TransactionsProvider>
       <BudgetProvider>
-        <NavigationContainer theme={theme}>
-          <StatusBar style="light" />
-          <BottomTabs />
-        </NavigationContainer>
+        <RecurringProvider>
+          <NavigationContainer theme={theme}>
+            <StatusBar style="light" />
+            <BottomTabs />
+          </NavigationContainer>
+        </RecurringProvider>
       </BudgetProvider>
     </TransactionsProvider>
   );

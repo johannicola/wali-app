@@ -8,6 +8,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { colors } from '../constants/colors';
 import { CATEGORIES, CategoryId } from '../constants/categories';
@@ -23,14 +24,37 @@ type Props = {
   editing?: Transaction | null;
 };
 
+// --- Ayudas de fecha ---
+const isSameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+
+const shiftDays = (d: Date, n: number) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+
+const shiftMonths = (d: Date, n: number) => {
+  const target = new Date(d.getFullYear(), d.getMonth() + n, 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(d.getDate(), lastDay)); // evita saltar al mes siguiente (31 → 30)
+  target.setHours(d.getHours(), d.getMinutes(), 0, 0);
+  return target;
+};
+
+// Nunca permitir fechas futuras
+const clampToToday = (d: Date) => {
+  const now = new Date();
+  return d.getTime() > now.getTime() ? now : d;
+};
+
 export default function AddTransactionModal({ visible, onClose, editing }: Props) {
   const { addTransaction, updateTransaction } = useTransactions();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<TransactionType>('expense');
   const [categoryId, setCategoryId] = useState<CategoryId>('food');
+  const [date, setDate] = useState<Date>(new Date());
 
-  // Cada vez que se abre: cargar los datos a editar, o dejar el formulario limpio
   useEffect(() => {
     if (!visible) return;
     if (editing) {
@@ -38,13 +62,24 @@ export default function AddTransactionModal({ visible, onClose, editing }: Props
       setAmount((editing.amountCents / 100).toFixed(2));
       setType(editing.type);
       setCategoryId(editing.categoryId ?? 'other');
+      setDate(new Date(editing.date));
     } else {
       setTitle('');
       setAmount('');
       setType('expense');
       setCategoryId('food');
+      setDate(new Date());
     }
   }, [visible, editing]);
+
+  const today = new Date();
+  const yesterday = shiftDays(today, -1);
+  const dateLabel = date.toLocaleDateString('es', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 
   const handleSave = () => {
     const value = parseFloat(amount.replace(',', '.'));
@@ -55,6 +90,7 @@ export default function AddTransactionModal({ visible, onClose, editing }: Props
       amountCents: Math.round(value * 100),
       type,
       categoryId: type === 'expense' ? categoryId : undefined,
+      date: date.toISOString(),
     };
 
     if (editing) updateTransaction(editing.id, data);
@@ -70,65 +106,120 @@ export default function AddTransactionModal({ visible, onClose, editing }: Props
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.sheet}>
-          <Text style={styles.heading}>
-            {editing ? 'Editar transacción' : 'Nueva transacción'}
-          </Text>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 12 }}>
+            <Text style={styles.heading}>
+              {editing ? 'Editar transacción' : 'Nueva transacción'}
+            </Text>
 
-          <View style={styles.toggleRow}>
-            {(['expense', 'income'] as TransactionType[]).map((t) => (
-              <Pressable
-                key={t}
-                onPress={() => setType(t)}
-                style={[styles.toggle, type === t && styles.toggleActive]}
-              >
-                <Text style={[styles.toggleText, type === t && styles.toggleTextActive]}>
-                  {t === 'expense' ? 'Gasto' : 'Ingreso'}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Descripción (ej. Almuerzo)"
-            placeholderTextColor={colors.textMuted}
-            value={title}
-            onChangeText={setTitle}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Monto"
-            placeholderTextColor={colors.textMuted}
-            keyboardType="decimal-pad"
-            value={amount}
-            onChangeText={setAmount}
-          />
-
-          {type === 'expense' && (
-            <View>
-              <Text style={styles.label}>Categoría</Text>
-              <View style={styles.chips}>
-                {CATEGORIES.map((c) => (
-                  <Pressable
-                    key={c.id}
-                    onPress={() => setCategoryId(c.id)}
-                    style={[styles.chip, categoryId === c.id && styles.chipActive]}
-                  >
-                    <Text style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}>
-                      {c.emoji} {c.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+            <View style={styles.toggleRow}>
+              {(['expense', 'income'] as TransactionType[]).map((t) => (
+                <Pressable
+                  key={t}
+                  onPress={() => setType(t)}
+                  style={[styles.toggle, type === t && styles.toggleActive]}
+                >
+                  <Text style={[styles.toggleText, type === t && styles.toggleTextActive]}>
+                    {t === 'expense' ? 'Gasto' : 'Ingreso'}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
-          )}
 
-          <Pressable style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveText}>{editing ? 'Guardar cambios' : 'Guardar'}</Text>
-          </Pressable>
-          <Pressable onPress={onClose} style={styles.cancel}>
-            <Text style={styles.cancelText}>Cancelar</Text>
-          </Pressable>
+            <TextInput
+              style={styles.input}
+              placeholder="Descripción (ej. Almuerzo)"
+              placeholderTextColor={colors.textMuted}
+              value={title}
+              onChangeText={setTitle}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Monto"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="decimal-pad"
+              value={amount}
+              onChangeText={setAmount}
+            />
+
+            {/* Fecha */}
+            <View>
+              <Text style={styles.label}>Fecha</Text>
+
+              <View style={styles.chips}>
+                <Pressable
+                  onPress={() => setDate(new Date())}
+                  style={[styles.chip, isSameDay(date, today) && styles.chipActive]}
+                >
+                  <Text style={[styles.chipText, isSameDay(date, today) && styles.chipTextActive]}>
+                    Hoy
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setDate(yesterday)}
+                  style={[styles.chip, isSameDay(date, yesterday) && styles.chipActive]}
+                >
+                  <Text
+                    style={[styles.chipText, isSameDay(date, yesterday) && styles.chipTextActive]}
+                  >
+                    Ayer
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.stepper}>
+                <Pressable style={styles.stepBtn} onPress={() => setDate(shiftMonths(date, -1))}>
+                  <Text style={styles.stepText}>«</Text>
+                </Pressable>
+                <Pressable style={styles.stepBtn} onPress={() => setDate(shiftDays(date, -1))}>
+                  <Text style={styles.stepText}>‹</Text>
+                </Pressable>
+
+                <Text style={styles.dateLabel}>{dateLabel}</Text>
+
+                <Pressable
+                  style={styles.stepBtn}
+                  onPress={() => setDate(clampToToday(shiftDays(date, 1)))}
+                >
+                  <Text style={styles.stepText}>›</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.stepBtn}
+                  onPress={() => setDate(clampToToday(shiftMonths(date, 1)))}
+                >
+                  <Text style={styles.stepText}>»</Text>
+                </Pressable>
+              </View>
+              <Text style={styles.stepHint}>‹ › mueven un día · « » mueven un mes</Text>
+            </View>
+
+            {type === 'expense' && (
+              <View>
+                <Text style={styles.label}>Categoría</Text>
+                <View style={styles.chips}>
+                  {CATEGORIES.map((c) => (
+                    <Pressable
+                      key={c.id}
+                      onPress={() => setCategoryId(c.id)}
+                      style={[styles.chip, categoryId === c.id && styles.chipActive]}
+                    >
+                      <Text
+                        style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}
+                      >
+                        {c.emoji} {c.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <Pressable style={styles.saveButton} onPress={handleSave}>
+              <Text style={styles.saveText}>{editing ? 'Guardar cambios' : 'Guardar'}</Text>
+            </Pressable>
+            <Pressable onPress={onClose} style={styles.cancel}>
+              <Text style={styles.cancelText}>Cancelar</Text>
+            </Pressable>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -142,7 +233,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    gap: 12,
+    maxHeight: '90%',
   },
   heading: { color: colors.text, fontSize: 18, fontWeight: '700' },
   toggleRow: { flexDirection: 'row', gap: 8 },
@@ -177,6 +268,26 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   chipTextActive: { color: colors.background },
+  stepper: { flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 6 },
+  stepBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepText: { color: colors.text, fontSize: 20, fontWeight: '700', marginTop: -2 },
+  dateLabel: {
+    flex: 1,
+    color: colors.text,
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 13,
+    textTransform: 'capitalize',
+  },
+  stepHint: { color: colors.textMuted, fontSize: 11, marginTop: 6 },
   saveButton: {
     backgroundColor: colors.primary,
     padding: 14,

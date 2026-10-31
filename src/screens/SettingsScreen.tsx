@@ -1,3 +1,4 @@
+import RecurringManager from '../components/RecurringManager';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
@@ -133,6 +134,7 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+
         {/* Límites por categoría */}
         <View style={[styles.card, { marginTop: 20 }]}>
           <Text style={styles.label}>Límite por categoría</Text>
@@ -180,6 +182,7 @@ export default function SettingsScreen() {
             <Text style={styles.buttonText}>{savedCats ? '¡Guardado!' : 'Guardar límites'}</Text>
           </Pressable>
         </View>
+        <RecurringManager />
       </ScrollView>
     </SafeAreaView>
   );

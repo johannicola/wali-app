@@ -10,21 +10,27 @@ export type Transaction = {
   amountCents: number;
   type: TransactionType;
   categoryId?: CategoryId;
-  date: string;
+  recurringId?: string; // si vino de un gasto recurrente
+  date: string; // ISO
 };
 
-type NewTransaction = Omit<Transaction, 'id' | 'date'>;
+type NewTransaction = Omit<Transaction, 'id' | 'date'> & { date?: string };
 
 type ContextValue = {
   transactions: Transaction[];
+  loaded: boolean;
   balanceCents: number;
   addTransaction: (t: NewTransaction) => void;
   updateTransaction: (id: string, changes: NewTransaction) => void;
   deleteTransaction: (id: string) => void;
 };
 
-
 const TransactionsContext = createContext<ContextValue | undefined>(undefined);
+
+const sortByDate = (list: Transaction[]) =>
+  [...list].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -32,7 +38,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadTransactions().then((data) => {
-      setTransactions(data);
+      setTransactions(sortByDate(data));
       setLoaded(true);
     });
   }, []);
@@ -44,20 +50,24 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   const addTransaction = (t: NewTransaction) => {
     const newItem: Transaction = {
       ...t,
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
+      id: newId(),
+      date: t.date ?? new Date().toISOString(),
     };
-    setTransactions((prev) => [newItem, ...prev]);
-  };
-
-  const deleteTransaction = (id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
+    setTransactions((prev) => sortByDate([newItem, ...prev]));
   };
 
   const updateTransaction = (id: string, changes: NewTransaction) => {
     setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...changes } : t))
+      sortByDate(
+        prev.map((t) =>
+          t.id === id ? { ...t, ...changes, date: changes.date ?? t.date } : t
+        )
+      )
     );
+  };
+
+  const deleteTransaction = (id: string) => {
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
   const balanceCents = useMemo(
@@ -71,7 +81,14 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
   return (
     <TransactionsContext.Provider
-      value={{ transactions, balanceCents, addTransaction, updateTransaction, deleteTransaction }}
+      value={{
+        transactions,
+        loaded,
+        balanceCents,
+        addTransaction,
+        updateTransaction,
+        deleteTransaction,
+      }}
     >
       {children}
     </TransactionsContext.Provider>
