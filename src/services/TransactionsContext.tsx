@@ -19,8 +19,10 @@ type ContextValue = {
   transactions: Transaction[];
   balanceCents: number;
   addTransaction: (t: NewTransaction) => void;
+  updateTransaction: (id: string, changes: NewTransaction) => void;
   deleteTransaction: (id: string) => void;
 };
+
 
 const TransactionsContext = createContext<ContextValue | undefined>(undefined);
 
@@ -52,6 +54,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const updateTransaction = (id: string, changes: NewTransaction) => {
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...changes } : t))
+    );
+  };
+
   const balanceCents = useMemo(
     () =>
       transactions.reduce(
@@ -63,7 +71,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
   return (
     <TransactionsContext.Provider
-      value={{ transactions, balanceCents, addTransaction, deleteTransaction }}
+      value={{ transactions, balanceCents, addTransaction, updateTransaction, deleteTransaction }}
     >
       {children}
     </TransactionsContext.Provider>

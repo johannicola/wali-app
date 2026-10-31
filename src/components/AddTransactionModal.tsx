@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   View,
@@ -11,34 +11,55 @@ import {
 } from 'react-native';
 import { colors } from '../constants/colors';
 import { CATEGORIES, CategoryId } from '../constants/categories';
-import { useTransactions, TransactionType } from '../services/TransactionsContext';
+import {
+  useTransactions,
+  Transaction,
+  TransactionType,
+} from '../services/TransactionsContext';
 
-type Props = { visible: boolean; onClose: () => void };
+type Props = {
+  visible: boolean;
+  onClose: () => void;
+  editing?: Transaction | null;
+};
 
-export default function AddTransactionModal({ visible, onClose }: Props) {
-  const { addTransaction } = useTransactions();
+export default function AddTransactionModal({ visible, onClose, editing }: Props) {
+  const { addTransaction, updateTransaction } = useTransactions();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<TransactionType>('expense');
   const [categoryId, setCategoryId] = useState<CategoryId>('food');
 
-  const reset = () => {
-    setTitle('');
-    setAmount('');
-    setType('expense');
-    setCategoryId('food');
-  };
+  // Cada vez que se abre: cargar los datos a editar, o dejar el formulario limpio
+  useEffect(() => {
+    if (!visible) return;
+    if (editing) {
+      setTitle(editing.title);
+      setAmount((editing.amountCents / 100).toFixed(2));
+      setType(editing.type);
+      setCategoryId(editing.categoryId ?? 'other');
+    } else {
+      setTitle('');
+      setAmount('');
+      setType('expense');
+      setCategoryId('food');
+    }
+  }, [visible, editing]);
 
   const handleSave = () => {
     const value = parseFloat(amount.replace(',', '.'));
     if (!title.trim() || isNaN(value) || value <= 0) return;
-    addTransaction({
+
+    const data = {
       title: title.trim(),
       amountCents: Math.round(value * 100),
       type,
       categoryId: type === 'expense' ? categoryId : undefined,
-    });
-    reset();
+    };
+
+    if (editing) updateTransaction(editing.id, data);
+    else addTransaction(data);
+
     onClose();
   };
 
@@ -49,7 +70,9 @@ export default function AddTransactionModal({ visible, onClose }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.sheet}>
-          <Text style={styles.heading}>Nueva transacción</Text>
+          <Text style={styles.heading}>
+            {editing ? 'Editar transacción' : 'Nueva transacción'}
+          </Text>
 
           <View style={styles.toggleRow}>
             {(['expense', 'income'] as TransactionType[]).map((t) => (
@@ -101,7 +124,7 @@ export default function AddTransactionModal({ visible, onClose }: Props) {
           )}
 
           <Pressable style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveText}>Guardar</Text>
+            <Text style={styles.saveText}>{editing ? 'Guardar cambios' : 'Guardar'}</Text>
           </Pressable>
           <Pressable onPress={onClose} style={styles.cancel}>
             <Text style={styles.cancelText}>Cancelar</Text>
