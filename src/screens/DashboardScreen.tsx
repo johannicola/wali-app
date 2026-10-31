@@ -5,10 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
 import { getCategory } from '../constants/categories';
 import { useTransactions, formatMoney } from '../services/TransactionsContext';
+import { useBudget } from '../services/BudgetContext';
 import AddTransactionModal from '../components/AddTransactionModal';
 import BudgetProgress from '../components/BudgetProgress';
 
 const EXPENSE_COLOR = '#FF5252';
+const WARNING_COLOR = '#FFB020';
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -23,6 +25,7 @@ const formatDate = (iso: string) => {
 
 export default function DashboardScreen() {
   const { transactions } = useTransactions();
+  const { categoryBudgets } = useBudget();
   const [modalVisible, setModalVisible] = useState(false);
 
   const { monthExpense, monthIncome, byCategory } = useMemo(() => {
@@ -91,8 +94,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        <BudgetProgress spentCents={monthExpense} />   {/* <-- LÍNEA NUEVA */}
-
+        <BudgetProgress spentCents={monthExpense} />
 
         {/* Gastos por categoría */}
         <View style={styles.sectionHeader}>
@@ -104,19 +106,41 @@ export default function DashboardScreen() {
           <View style={styles.categoryCard}>
             {byCategory.map(({ category, cents }) => {
               const pct = monthExpense > 0 ? Math.round((cents / monthExpense) * 100) : 0;
+              const limit = categoryBudgets[category.id] ?? 0;
+              const hasLimit = limit > 0;
+              const ratio = hasLimit ? cents / limit : 0;
+
+              const barPct = hasLimit ? Math.min(Math.round(ratio * 100), 100) : pct;
+              const barColor = !hasLimit
+                ? colors.primary
+                : ratio >= 1
+                ? EXPENSE_COLOR
+                : ratio >= 0.8
+                ? WARNING_COLOR
+                : colors.primary;
+
               return (
                 <View key={category.id} style={styles.categoryRow}>
                   <View style={styles.categoryTop}>
                     <Text style={styles.categoryName}>
                       {category.emoji} {category.label}
                     </Text>
-                    <Text style={styles.categoryAmount}>
-                      {formatMoney(cents)} · {pct}%
+                    <Text style={[styles.categoryAmount, hasLimit && { color: barColor }]}>
+                      {hasLimit
+                        ? `${formatMoney(cents)} / ${formatMoney(limit)}`
+                        : `${formatMoney(cents)} · ${pct}%`}
                     </Text>
                   </View>
                   <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { width: `${pct}%` }]} />
+                    <View
+                      style={[styles.barFill, { width: `${barPct}%`, backgroundColor: barColor }]}
+                    />
                   </View>
+                  {hasLimit && ratio >= 1 && (
+                    <Text style={styles.overText}>
+                      Te pasaste por {formatMoney(cents - limit)}
+                    </Text>
+                  )}
                 </View>
               );
             })}
@@ -206,7 +230,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     overflow: 'hidden',
   },
-  barFill: { height: 8, borderRadius: 4, backgroundColor: colors.primary },
+  barFill: { height: 8, borderRadius: 4 },
+  overText: { color: EXPENSE_COLOR, fontSize: 12, fontWeight: '600' },
 
   transactionItem: {
     flexDirection: 'row',
@@ -235,4 +260,3 @@ const styles = StyleSheet.create({
   },
   fabText: { color: colors.background, fontSize: 32, fontWeight: '700', marginTop: -2 },
 });
-

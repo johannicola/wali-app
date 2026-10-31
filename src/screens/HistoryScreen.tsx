@@ -132,7 +132,7 @@ export default function HistoryScreen() {
           >
             <View>
               <Text style={styles.cardTitle}>
-                {item.type === 'expense' ? `${getCategory(item.categoryId).emoji} ` : '💰 '}
+                {item.type === 'expense' ? `${getCategory(item.categoryId).emoji} ` : ' '}
                 {item.title}
               </Text>
               <Text style={styles.cardDate}>

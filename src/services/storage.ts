@@ -37,3 +37,22 @@ export async function saveBudget(cents: number): Promise<void> {
     console.warn('No se pudo guardar el presupuesto', e);
   }
 }
+
+const CATEGORY_BUDGETS_KEY = 'wali:categoryBudgets';
+
+export async function loadCategoryBudgets(): Promise<Record<string, number>> {
+  try {
+    const raw = await AsyncStorage.getItem(CATEGORY_BUDGETS_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function saveCategoryBudgets(budgets: Record<string, number>): Promise<void> {
+  try {
+    await AsyncStorage.setItem(CATEGORY_BUDGETS_KEY, JSON.stringify(budgets));
+  } catch (e) {
+    console.warn('No se pudieron guardar los presupuestos', e);
+  }
+}
