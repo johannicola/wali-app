@@ -13,11 +13,12 @@ const ITEMS: {
   icon: IconName;
   title: string;
   subtitle: string;
-  route: 'Budget' | 'Categories' | 'Recurring';
+  route: 'Budget' | 'Categories' | 'Recurring' | 'Data';
 }[] = [
   { icon: 'wallet-outline', title: 'Presupuesto', subtitle: 'Total mensual y límite por categoría', route: 'Budget' },
   { icon: 'pricetags-outline', title: 'Categorías', subtitle: 'Agregar, editar y eliminar', route: 'Categories' },
   { icon: 'repeat-outline', title: 'Gastos recurrentes', subtitle: 'Alquiler, suscripciones, internet', route: 'Recurring' },
+  { icon: 'download-outline', title: 'Exportar datos', subtitle: 'Descargar tus movimientos en CSV', route: 'Data' },
 ];
 
 export default function SettingsScreen({ navigation }: Props) {

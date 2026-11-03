@@ -5,12 +5,14 @@ import SettingsScreen from '../screens/SettingsScreen';
 import BudgetScreen from '../screens/BudgetScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import RecurringScreen from '../screens/RecurringScreen';
+import DataScreen from '../screens/DataScreen';
 
 export type SettingsStackParamList = {
   SettingsHome: undefined;
   Budget: undefined;
   Categories: undefined;
   Recurring: undefined;
+  Data: undefined;
 };
 
 const Stack = createNativeStackNavigator<SettingsStackParamList>();
@@ -31,6 +33,7 @@ export default function SettingsNavigator() {
       <Stack.Screen name="Budget" component={BudgetScreen} options={{ title: 'Presupuesto' }} />
       <Stack.Screen name="Categories" component={CategoriesScreen} options={{ title: 'Categorías' }} />
       <Stack.Screen name="Recurring" component={RecurringScreen} options={{ title: 'Gastos recurrentes' }} />
+      <Stack.Screen name="Data" component={DataScreen} options={{ title: 'Exportar datos' }} />
     </Stack.Navigator>
   );
 }
