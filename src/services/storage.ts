@@ -3,7 +3,13 @@ import type { Transaction } from './TransactionsContext';
 
 const TRANSACTIONS_KEY = 'wali:transactions';
 const BUDGET_KEY = 'wali:monthlyBudgetCents';
+const CATEGORY_BUDGETS_KEY = 'wali:categoryBudgets';
+const RECURRING_KEY = 'wali:recurring';
+const CATEGORIES_KEY = 'wali:categories';
 
+type StoredCategory = { id: string; label: string; color: string };
+
+// --- Transacciones ---
 export async function loadTransactions(): Promise<Transaction[]> {
   try {
     const raw = await AsyncStorage.getItem(TRANSACTIONS_KEY);
@@ -21,6 +27,7 @@ export async function saveTransactions(transactions: Transaction[]): Promise<voi
   }
 }
 
+// --- Presupuesto total ---
 export async function loadBudget(): Promise<number> {
   try {
     const raw = await AsyncStorage.getItem(BUDGET_KEY);
@@ -38,8 +45,7 @@ export async function saveBudget(cents: number): Promise<void> {
   }
 }
 
-const CATEGORY_BUDGETS_KEY = 'wali:categoryBudgets';
-
+// --- Límites por categoría ---
 export async function loadCategoryBudgets(): Promise<Record<string, number>> {
   try {
     const raw = await AsyncStorage.getItem(CATEGORY_BUDGETS_KEY);
@@ -57,9 +63,7 @@ export async function saveCategoryBudgets(budgets: Record<string, number>): Prom
   }
 }
 
-
-const RECURRING_KEY = 'wali:recurring';
-
+// --- Gastos recurrentes ---
 export async function loadRecurring(): Promise<any[]> {
   try {
     const raw = await AsyncStorage.getItem(RECURRING_KEY);
@@ -74,5 +78,23 @@ export async function saveRecurring(items: any[]): Promise<void> {
     await AsyncStorage.setItem(RECURRING_KEY, JSON.stringify(items));
   } catch (e) {
     console.warn('No se pudieron guardar los recurrentes', e);
+  }
+}
+
+// --- Categorías ---
+export async function loadCategories(): Promise<StoredCategory[] | null> {
+  try {
+    const raw = await AsyncStorage.getItem(CATEGORIES_KEY);
+    return raw ? (JSON.parse(raw) as StoredCategory[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveCategories(categories: StoredCategory[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+  } catch (e) {
+    console.warn('No se pudieron guardar las categorías', e);
   }
 }

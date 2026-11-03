@@ -11,19 +11,21 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
-import { CATEGORIES, CategoryId, getCategory } from '../constants/categories';
+import { CategoryId } from '../constants/categories';
+import { useCategories } from '../services/CategoriesContext';
 import {
   useTransactions,
   formatMoney,
   Transaction,
 } from '../services/TransactionsContext';
 import AddTransactionModal from '../components/AddTransactionModal';
+import CategoryDot from '../components/CategoryDot';
 
 type TypeFilter = 'all' | 'expense' | 'income';
-const EXPENSE_COLOR = '#FF5252';
 
 export default function HistoryScreen() {
   const { transactions, deleteTransaction } = useTransactions();
+  const { categories, getCategory } = useCategories();
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
@@ -39,7 +41,7 @@ export default function HistoryScreen() {
       if (text && !t.title.toLowerCase().includes(text)) return false;
       return true;
     });
-  }, [transactions, search, typeFilter, categoryFilter]);
+  }, [transactions, search, typeFilter, categoryFilter, getCategory]);
 
   const openEdit = (t: Transaction) => {
     setEditing(t);
@@ -87,7 +89,11 @@ export default function HistoryScreen() {
           ))}
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.row}
+        >
           <Pressable
             onPress={() => setCategoryFilter('all')}
             style={[styles.chip, categoryFilter === 'all' && styles.chipActive]}
@@ -96,14 +102,15 @@ export default function HistoryScreen() {
               Todas
             </Text>
           </Pressable>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <Pressable
               key={c.id}
               onPress={() => setCategoryFilter(c.id)}
               style={[styles.chip, categoryFilter === c.id && styles.chipActive]}
             >
+              <CategoryDot color={c.color} size={8} />
               <Text style={[styles.chipText, categoryFilter === c.id && styles.chipTextActive]}>
-                {c.emoji} {c.label}
+                {c.label}
               </Text>
             </Pressable>
           ))}
@@ -111,7 +118,8 @@ export default function HistoryScreen() {
       </View>
 
       <Text style={styles.hint}>
-        {filtered.length} resultado{filtered.length === 1 ? '' : 's'} · Toca para editar, mantén para borrar
+        {filtered.length} resultado{filtered.length === 1 ? '' : 's'} · Toca para editar, mantén
+        para borrar
       </Text>
 
       <FlatList
@@ -121,7 +129,9 @@ export default function HistoryScreen() {
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <Text style={styles.empty}>
-            {transactions.length === 0 ? 'Aún no hay transacciones' : 'Nada coincide con los filtros'}
+            {transactions.length === 0
+              ? 'Aún no hay transacciones'
+              : 'Nada coincide con los filtros'}
           </Text>
         }
         renderItem={({ item }) => (
@@ -130,11 +140,15 @@ export default function HistoryScreen() {
             onPress={() => openEdit(item)}
             onLongPress={() => confirmDelete(item)}
           >
-            <View>
-              <Text style={styles.cardTitle}>
-                {item.type === 'expense' ? `${getCategory(item.categoryId).emoji} ` : ' '}
-                {item.title}
-              </Text>
+            <View style={{ flex: 1 }}>
+              <View style={styles.titleRow}>
+                <CategoryDot
+                  color={item.type === 'expense' ? getCategory(item.categoryId).color : colors.primary}
+                />
+                <Text style={styles.cardTitle} numberOfLines={1}>
+                  {item.title}
+                </Text>
+              </View>
               <Text style={styles.cardDate}>
                 {new Date(item.date).toLocaleDateString('es', {
                   day: 'numeric',
@@ -146,7 +160,7 @@ export default function HistoryScreen() {
             <Text
               style={[
                 styles.amount,
-                { color: item.type === 'income' ? colors.primary : EXPENSE_COLOR },
+                { color: item.type === 'income' ? colors.primary : colors.danger },
               ]}
             >
               {item.type === 'income' ? '+' : '-'}
@@ -182,6 +196,9 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', gap: 8 },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingVertical: 7,
     paddingHorizontal: 12,
     borderRadius: 20,
@@ -200,10 +217,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  cardTitle: { color: colors.text, fontWeight: '600', fontSize: 15 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cardTitle: { color: colors.text, fontWeight: '600', fontSize: 15, flexShrink: 1 },
   cardDate: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
   amount: { fontWeight: '700' },
 });

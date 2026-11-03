@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Alert, Keyboard, StyleSheet } from 'react-native';
 import { colors } from '../constants/colors';
-import { CATEGORIES, CategoryId, getCategory } from '../constants/categories';
+import { CategoryId, FALLBACK_ID } from '../constants/categories';
+import { useCategories } from '../services/CategoriesContext';
 import { useRecurring } from '../services/RecurringContext';
 import { formatMoney, TransactionType } from '../services/TransactionsContext';
+import CategoryDot from './CategoryDot';
 
 export default function RecurringManager() {
+  const { categories, getCategory } = useCategories();
   const { items, addRecurring, deleteRecurring } = useRecurring();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -13,6 +16,9 @@ export default function RecurringManager() {
   const [type, setType] = useState<TransactionType>('expense');
   const [categoryId, setCategoryId] = useState<CategoryId>('home');
   const [error, setError] = useState('');
+
+  // Si la categoría elegida ya no existe, se usa "Otros"
+  const effectiveCategory = categories.some((c) => c.id === categoryId) ? categoryId : FALLBACK_ID;
 
   const handleAdd = () => {
     const value = parseFloat(amount.replace(',', '.'));
@@ -27,7 +33,7 @@ export default function RecurringManager() {
       title: title.trim(),
       amountCents: Math.round(value * 100),
       type,
-      categoryId: type === 'expense' ? categoryId : undefined,
+      categoryId: type === 'expense' ? effectiveCategory : undefined,
       dayOfMonth: dayNumber,
     });
 
@@ -56,16 +62,18 @@ export default function RecurringManager() {
         Se registran solos cada mes, el día que elijas (alquiler, internet, suscripciones).
       </Text>
 
-      {/* Lista */}
       {items.length === 0 ? (
         <Text style={styles.empty}>Aún no tienes recurrentes.</Text>
       ) : (
         items.map((r) => (
           <View key={r.id} style={styles.item}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.itemTitle}>
-                 {r.type === 'expense' ? getCategory(r.categoryId).emoji : ''} {r.title}
-              </Text>
+              <View style={styles.itemHead}>
+                <CategoryDot
+                  color={r.type === 'expense' ? getCategory(r.categoryId).color : colors.primary}
+                />
+                <Text style={styles.itemTitle}>{r.title}</Text>
+              </View>
               <Text style={styles.itemSub}>
                 {r.type === 'expense' ? '-' : '+'}
                 {formatMoney(r.amountCents)} · el día {r.dayOfMonth} de cada mes
@@ -78,7 +86,6 @@ export default function RecurringManager() {
         ))
       )}
 
-      {/* Formulario */}
       <View style={styles.divider} />
       <Text style={styles.subLabel}>Agregar nuevo</Text>
 
@@ -133,14 +140,17 @@ export default function RecurringManager() {
 
       {type === 'expense' && (
         <View style={styles.chips}>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <Pressable
               key={c.id}
               onPress={() => setCategoryId(c.id)}
-              style={[styles.chip, categoryId === c.id && styles.chipActive]}
+              style={[styles.chip, effectiveCategory === c.id && styles.chipActive]}
             >
-              <Text style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}>
-                {c.emoji} {c.label}
+              <CategoryDot color={c.color} size={8} />
+              <Text
+                style={[styles.chipText, effectiveCategory === c.id && styles.chipTextActive]}
+              >
+                {c.label}
               </Text>
             </Pressable>
           ))}
@@ -163,8 +173,7 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
-    marginTop: 20,
+    borderColor: colors.borderSoft,
   },
   label: { color: colors.text, fontSize: 16, fontWeight: '600' },
   subLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
@@ -180,9 +189,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  itemHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   itemTitle: { color: colors.text, fontWeight: '600' },
   itemSub: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
-  delete: { color: '#FF5252', fontSize: 13, fontWeight: '600' },
+  delete: { color: colors.danger, fontSize: 13, fontWeight: '600' },
   divider: { height: 1, backgroundColor: colors.border },
   row: { flexDirection: 'row', gap: 8 },
   toggle: {
@@ -206,6 +216,9 @@ const styles = StyleSheet.create({
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingVertical: 7,
     paddingHorizontal: 12,
     borderRadius: 20,
@@ -215,7 +228,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   chipTextActive: { color: colors.background },
-  error: { color: '#FF5252', fontSize: 13, fontWeight: '600' },
+  error: { color: colors.danger, fontSize: 13, fontWeight: '600' },
   button: { backgroundColor: colors.primary, padding: 14, borderRadius: 12, alignItems: 'center' },
   buttonText: { color: colors.background, fontWeight: '700' },
 });

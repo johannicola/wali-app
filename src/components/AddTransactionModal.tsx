@@ -11,12 +11,14 @@ import {
   ScrollView,
 } from 'react-native';
 import { colors } from '../constants/colors';
-import { CATEGORIES, CategoryId } from '../constants/categories';
+import { CategoryId, FALLBACK_ID } from '../constants/categories';
+import { useCategories } from '../services/CategoriesContext';
 import {
   useTransactions,
   Transaction,
   TransactionType,
 } from '../services/TransactionsContext';
+import CategoryDot from './CategoryDot';
 
 type Props = {
   visible: boolean;
@@ -36,12 +38,11 @@ const shiftDays = (d: Date, n: number) => {
 const shiftMonths = (d: Date, n: number) => {
   const target = new Date(d.getFullYear(), d.getMonth() + n, 1);
   const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
-  target.setDate(Math.min(d.getDate(), lastDay)); // evita saltar al mes siguiente (31 → 30)
+  target.setDate(Math.min(d.getDate(), lastDay));
   target.setHours(d.getHours(), d.getMinutes(), 0, 0);
   return target;
 };
 
-// Nunca permitir fechas futuras
 const clampToToday = (d: Date) => {
   const now = new Date();
   return d.getTime() > now.getTime() ? now : d;
@@ -49,11 +50,15 @@ const clampToToday = (d: Date) => {
 
 export default function AddTransactionModal({ visible, onClose, editing }: Props) {
   const { addTransaction, updateTransaction } = useTransactions();
+  const { categories } = useCategories();
+
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<TransactionType>('expense');
-  const [categoryId, setCategoryId] = useState<CategoryId>('food');
+  const [categoryId, setCategoryId] = useState<CategoryId>(FALLBACK_ID);
   const [date, setDate] = useState<Date>(new Date());
+
+  const defaultCategory = categories[0]?.id ?? FALLBACK_ID;
 
   useEffect(() => {
     if (!visible) return;
@@ -61,16 +66,21 @@ export default function AddTransactionModal({ visible, onClose, editing }: Props
       setTitle(editing.title);
       setAmount((editing.amountCents / 100).toFixed(2));
       setType(editing.type);
-      setCategoryId(editing.categoryId ?? 'other');
+      setCategoryId(editing.categoryId ?? FALLBACK_ID);
       setDate(new Date(editing.date));
     } else {
       setTitle('');
       setAmount('');
       setType('expense');
-      setCategoryId('food');
+      setCategoryId(defaultCategory);
       setDate(new Date());
     }
   }, [visible, editing]);
+
+  // Si la categoría elegida ya no existe, se usa "Otros"
+  const effectiveCategory = categories.some((c) => c.id === categoryId)
+    ? categoryId
+    : FALLBACK_ID;
 
   const today = new Date();
   const yesterday = shiftDays(today, -1);
@@ -89,7 +99,7 @@ export default function AddTransactionModal({ visible, onClose, editing }: Props
       title: title.trim(),
       amountCents: Math.round(value * 100),
       type,
-      categoryId: type === 'expense' ? categoryId : undefined,
+      categoryId: type === 'expense' ? effectiveCategory : undefined,
       date: date.toISOString(),
     };
 
@@ -196,16 +206,20 @@ export default function AddTransactionModal({ visible, onClose, editing }: Props
               <View>
                 <Text style={styles.label}>Categoría</Text>
                 <View style={styles.chips}>
-                  {CATEGORIES.map((c) => (
+                  {categories.map((c) => (
                     <Pressable
                       key={c.id}
                       onPress={() => setCategoryId(c.id)}
-                      style={[styles.chip, categoryId === c.id && styles.chipActive]}
+                      style={[styles.chip, effectiveCategory === c.id && styles.chipActive]}
                     >
+                      <CategoryDot color={c.color} size={8} />
                       <Text
-                        style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}
+                        style={[
+                          styles.chipText,
+                          effectiveCategory === c.id && styles.chipTextActive,
+                        ]}
                       >
-                        {c.emoji} {c.label}
+                        {c.label}
                       </Text>
                     </Pressable>
                   ))}
@@ -259,6 +273,9 @@ const styles = StyleSheet.create({
   label: { color: colors.textMuted, fontSize: 12, marginBottom: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,

@@ -5,4 +5,7 @@ export const colors = {
   primary: '#D9F50A',
   text: '#FFFFFF',
   textMuted: '#8A8A8A',
+  borderSoft: '#2A2A2A',
+  danger: '#FF5252',
+  warning: '#FFB020',
 };

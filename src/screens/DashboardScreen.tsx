@@ -1,17 +1,15 @@
 // src/screens/DashboardScreen.tsx
-import MonthComparison from '../components/MonthComparison';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
-import { getCategory } from '../constants/categories';
+import { useCategories } from '../services/CategoriesContext';
 import { useTransactions, formatMoney } from '../services/TransactionsContext';
 import { useBudget } from '../services/BudgetContext';
 import AddTransactionModal from '../components/AddTransactionModal';
 import BudgetProgress from '../components/BudgetProgress';
-
-const EXPENSE_COLOR = '#FF5252';
-const WARNING_COLOR = '#FFB020';
+import MonthComparison from '../components/MonthComparison';
+import CategoryDot from '../components/CategoryDot';
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -26,6 +24,7 @@ const formatDate = (iso: string) => {
 
 export default function DashboardScreen() {
   const { transactions } = useTransactions();
+  const { getCategory } = useCategories();
   const { categoryBudgets } = useBudget();
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -55,7 +54,7 @@ export default function DashboardScreen() {
       .sort((a, b) => b.cents - a.cents);
 
     return { monthExpense: expense, monthIncome: income, byCategory: list };
-  }, [transactions]);
+  }, [transactions, getCategory]);
 
   const remaining = monthIncome - monthExpense;
   const recent = transactions.slice(0, 5);
@@ -85,7 +84,7 @@ export default function DashboardScreen() {
               <Text
                 style={[
                   styles.summaryValue,
-                  { color: remaining >= 0 ? colors.text : EXPENSE_COLOR },
+                  { color: remaining >= 0 ? colors.text : colors.danger },
                 ]}
               >
                 {remaining < 0 ? '-' : ''}
@@ -96,6 +95,7 @@ export default function DashboardScreen() {
         </View>
 
         <BudgetProgress spentCents={monthExpense} />
+
         <MonthComparison />
 
         {/* Gastos por categoría */}
@@ -114,20 +114,26 @@ export default function DashboardScreen() {
 
               const barPct = hasLimit ? Math.min(Math.round(ratio * 100), 100) : pct;
               const barColor = !hasLimit
-                ? colors.primary
+                ? category.color
                 : ratio >= 1
-                ? EXPENSE_COLOR
+                ? colors.danger
                 : ratio >= 0.8
-                ? WARNING_COLOR
-                : colors.primary;
+                ? colors.warning
+                : category.color;
 
               return (
                 <View key={category.id} style={styles.categoryRow}>
                   <View style={styles.categoryTop}>
-                    <Text style={styles.categoryName}>
-                      {category.emoji} {category.label}
-                    </Text>
-                    <Text style={[styles.categoryAmount, hasLimit && { color: barColor }]}>
+                    <View style={styles.categoryNameRow}>
+                      <CategoryDot color={category.color} />
+                      <Text style={styles.categoryName}>{category.label}</Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.categoryAmount,
+                        hasLimit && ratio >= 0.8 && { color: barColor },
+                      ]}
+                    >
                       {hasLimit
                         ? `${formatMoney(cents)} / ${formatMoney(limit)}`
                         : `${formatMoney(cents)} · ${pct}%`}
@@ -158,11 +164,15 @@ export default function DashboardScreen() {
         ) : (
           recent.map((t) => (
             <View key={t.id} style={styles.transactionItem}>
-              <View>
-                <Text style={styles.transactionTitle}>
-                  {t.type === 'expense' ? `${getCategory(t.categoryId).emoji} ` : ' '}
-                  {t.title}
-                </Text>
+              <View style={{ flex: 1 }}>
+                <View style={styles.categoryNameRow}>
+                  <CategoryDot
+                    color={t.type === 'expense' ? getCategory(t.categoryId).color : colors.primary}
+                  />
+                  <Text style={styles.transactionTitle} numberOfLines={1}>
+                    {t.title}
+                  </Text>
+                </View>
                 <Text style={styles.transactionDate}>{formatDate(t.date)}</Text>
               </View>
               <Text
@@ -202,7 +212,7 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 28,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: colors.borderSoft,
   },
   balanceLabel: { fontSize: 14, color: colors.textMuted, marginBottom: 8 },
   balanceAmount: { fontSize: 32, fontWeight: 'bold', color: colors.text, marginBottom: 12 },
@@ -220,10 +230,11 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 14,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: colors.borderSoft,
   },
   categoryRow: { gap: 6 },
-  categoryTop: { flexDirection: 'row', justifyContent: 'space-between' },
+  categoryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  categoryNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   categoryName: { color: colors.text, fontWeight: '600' },
   categoryAmount: { color: colors.textMuted, fontSize: 13 },
   barTrack: {
@@ -233,7 +244,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   barFill: { height: 8, borderRadius: 4 },
-  overText: { color: EXPENSE_COLOR, fontSize: 12, fontWeight: '600' },
+  overText: { color: colors.danger, fontSize: 12, fontWeight: '600' },
 
   transactionItem: {
     flexDirection: 'row',
@@ -243,10 +254,11 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
+    gap: 12,
   },
-  transactionTitle: { fontSize: 16, color: colors.text, fontWeight: '500' },
+  transactionTitle: { fontSize: 16, color: colors.text, fontWeight: '500', flexShrink: 1 },
   transactionDate: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
-  transactionAmountNegative: { fontSize: 16, fontWeight: '600', color: EXPENSE_COLOR },
+  transactionAmountNegative: { fontSize: 16, fontWeight: '600', color: colors.danger },
   transactionAmountPositive: { fontSize: 16, fontWeight: '600', color: colors.primary },
 
   fab: {

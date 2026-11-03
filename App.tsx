@@ -2,6 +2,7 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import BottomTabs from './src/navigation/BottomTabs';
+import { CategoriesProvider } from './src/services/CategoriesContext';
 import { TransactionsProvider } from './src/services/TransactionsContext';
 import { BudgetProvider } from './src/services/BudgetContext';
 import { RecurringProvider } from './src/services/RecurringContext';
@@ -14,15 +15,17 @@ const theme = {
 
 export default function App() {
   return (
-    <TransactionsProvider>
-      <BudgetProvider>
-        <RecurringProvider>
-          <NavigationContainer theme={theme}>
-            <StatusBar style="light" />
-            <BottomTabs />
-          </NavigationContainer>
-        </RecurringProvider>
-      </BudgetProvider>
-    </TransactionsProvider>
+    <CategoriesProvider>
+      <TransactionsProvider>
+        <BudgetProvider>
+          <RecurringProvider>
+            <NavigationContainer theme={theme}>
+              <StatusBar style="light" />
+              <BottomTabs />
+            </NavigationContainer>
+          </RecurringProvider>
+        </BudgetProvider>
+      </TransactionsProvider>
+    </CategoriesProvider>
   );
 }
